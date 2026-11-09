@@ -1,0 +1,43 @@
+# === KONFIGURASI SISTEM ===
+BROKER_URL = 'amqp://user:password@localhost:5672//'
+RESULT_BACKEND = 'rpc://'
+
+from kombu import Exchange, Queue
+
+# === DEFINISI ANTREAN & PERTUKARAN ===
+task_queues = (
+    # Skema 1: Fan-Out — Salin ke semua yang terhubung
+    Queue(
+        'antrean_fanout',
+        Exchange('tukar_fanout', type='fanout'),
+        routing_key=''
+    ),
+
+    # Skema 2: Topic — Cocokkan awalan
+    Queue(
+        'antrean_topic',
+        Exchange('tukar_topic', type='topic'),
+        routing_key='data.process.*'
+    ),
+
+    # Skema 3: Wildcard — Cocokkan pola hierarkis
+    Queue(
+        'antrean_wildcard',
+        Exchange('tukar_wildcard', type='topic'),
+        routing_key='laporan.#'
+    ),
+)
+
+# === PENGARAHAN TUGAS ===
+task_routes = {
+    'tasks.proses_siaran': {'queue': 'antrean_fanout'},
+    'tasks.proses_topik': {'queue': 'antrean_topic'},
+    'tasks.proses_laporan': {'queue': 'antrean_wildcard'},
+}
+
+# === PENGATURAN STANDAR ===
+task_default_exchange = 'celery'
+task_default_exchange_type = 'direct'
+task_default_routing_key = 'celery'
+accept_content = ['json']
+result_serializer = 'json'
